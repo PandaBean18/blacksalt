@@ -187,7 +187,7 @@ function PatternGrid({isDrawing, setIsDrawing, path, setPath, endPoint, setEndPo
 }
 
 function clearGrid(setPath: React.Dispatch<React.SetStateAction<PathPoint[]>>) {
-    let path: PathPoint[] = []
+    const path: PathPoint[] = []
 
     setPath(path);
 }
