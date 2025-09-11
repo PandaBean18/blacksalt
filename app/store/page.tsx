@@ -8,7 +8,7 @@ type Point = {
 }
 
 
-function PatternGridIndvDiv({onMouseDown, id, setRef}: {onMouseDown: (e: React.MouseEvent<HTMLDivElement>, dotRef: React.RefObject<HTMLDivElement | null>) => void, setRef: (el: any, id: number) => void, id: number})  {
+function PatternGridIndvDiv({onMouseDown, id, setRef}: {onMouseDown: (e: React.MouseEvent<HTMLDivElement>, dotRef: React.RefObject<HTMLDivElement | null>) => void, setRef: (el: HTMLDivElement, id: number) => void, id: number})  {
     const dotRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -57,13 +57,13 @@ interface PathPoint {
 function PatternGrid({isDrawing, setIsDrawing, path, setPath, endPoint, setEndPoint, setIsShaking}: {isDrawing: boolean, setIsDrawing: React.Dispatch<React.SetStateAction<boolean>>, path: PathPoint[], setPath: React.Dispatch<React.SetStateAction<PathPoint[]>>, endPoint: Point, setEndPoint: React.Dispatch<React.SetStateAction<Point>>, setIsShaking: React.Dispatch<React.SetStateAction<boolean>>}) {
     const allDotRefs = useRef<(HTMLDivElement | null)[]>([]);
 
-    const setDotRef = (el: any, id: number) => {
+    const setDotRef = (el: HTMLDivElement, id: number) => {
       if (el) {
         allDotRefs.current[id - 1] = el;
       }
     };
 
-    const handleMouseDown = (e: any, dotRef: React.RefObject<HTMLDivElement | null>) => {
+    const handleMouseDown = (e: React.MouseEvent<HTMLDivElement, MouseEvent>, dotRef: React.RefObject<HTMLDivElement | null>) => {
         setIsDrawing(true);
         // We now get the ref directly from the child
         const rect = dotRef.current!.getBoundingClientRect();
@@ -76,7 +76,7 @@ function PatternGrid({isDrawing, setIsDrawing, path, setPath, endPoint, setEndPo
     };
 
     useEffect(() => {
-        const handleMouseMove = (e: any) => {
+        const handleMouseMove = (e: MouseEvent) => {
             if (isDrawing) {
                 setEndPoint({ x: e.clientX, y: e.clientY });
 
