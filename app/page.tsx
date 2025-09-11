@@ -8,7 +8,7 @@ export default function Home() {
         <div className="flex flex-col md:flex-row justify-start md:justify-center items-center p-[50px] h-full md:h-min">
           <Button url="/store" text="Store Data" dark={false}></Button>
           <div className="h-[20px] w-[50px]"></div>
-          <Button url="#" text="View Data" dark={true} ></Button>
+          <Button url="/receive" text="View Data" dark={true} ></Button>
         </div>
       </div>
     </div>

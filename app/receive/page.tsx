@@ -8,7 +8,7 @@ type Point = {
 }
 
 
-function PatternGridIndvDiv({onMouseDown, id, setRef}: {onMouseDown: (e: React.MouseEvent<HTMLDivElement>, dotRef: React.RefObject<HTMLDivElement | null>) => void, setRef: (el: HTMLDivElement, id: number) => void, id: number})  {
+function PatternGridIndvDiv({onMouseDown, id, setRef}: {onMouseDown: (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>, dotRef: React.RefObject<HTMLDivElement | null>) => void, setRef: (el: HTMLDivElement, id: number) => void, id: number})  {
     const dotRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -63,7 +63,7 @@ function PatternGrid({isDrawing, setIsDrawing, path, setPath, endPoint, setEndPo
       }
     };
 
-    const handleMouseDown = (e: React.MouseEvent<HTMLDivElement, MouseEvent>, dotRef: React.RefObject<HTMLDivElement | null>) => {
+    const handleMouseDown = (e: React.MouseEvent<HTMLDivElement, MouseEvent> | React.TouchEvent<HTMLDivElement>, dotRef: React.RefObject<HTMLDivElement | null>) => {
         setIsDrawing(true);
         // We now get the ref directly from the child
         const rect = dotRef.current!.getBoundingClientRect();
@@ -76,9 +76,11 @@ function PatternGrid({isDrawing, setIsDrawing, path, setPath, endPoint, setEndPo
     };
 
     useEffect(() => {
-        const handleMouseMove = (e: MouseEvent) => {
+        const handleMouseMove = (e: MouseEvent | TouchEvent) => {
             if (isDrawing) {
-                setEndPoint({ x: e.clientX, y: e.clientY });
+                const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+                const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+                setEndPoint({ x: clientX, y: clientY });
 
                 // Get the ID of the last dot in the path
                 const lastDotId = path.length > 0 ? path[path.length - 1].id : null;
@@ -95,7 +97,7 @@ function PatternGrid({isDrawing, setIsDrawing, path, setPath, endPoint, setEndPo
                         continue;
                     }
 
-                    const distance = Math.hypot(e.clientX - dotCenterX, e.clientY - dotCenterY);
+                    const distance = Math.hypot(clientX - dotCenterX, clientY - dotCenterY);
 
                     const isDotInPath = path.some(p => p.id === dotId);
 
