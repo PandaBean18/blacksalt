@@ -27,6 +27,7 @@ body {
   letter-spacing: -0.06rem;
   height: 100%;
   width: 100%;
+  user-select: none;
 }
 
 html {
