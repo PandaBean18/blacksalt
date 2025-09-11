@@ -8,7 +8,7 @@ type Point = {
 }
 
 
-function PatternGridIndvDiv({onMouseDown, id, setRef}: {onMouseDown: (e: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>, dotRef: React.RefObject<HTMLDivElement | null>) => void, setRef: (el: HTMLDivElement, id: number) => void, id: number})  {
+function PatternGridIndvDiv({onMouseDown, id, setRef}: {onMouseDown: (e: React.PointerEvent<HTMLDivElement>, dotRef: React.RefObject<HTMLDivElement | null>) => void, setRef: (el: HTMLDivElement, id: number) => void, id: number})  {
     const dotRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -18,7 +18,7 @@ function PatternGridIndvDiv({onMouseDown, id, setRef}: {onMouseDown: (e: React.M
     }, [setRef, id]);
     return (
         <div className="flex flex-row justify-center items-center"
-            onMouseDown={(e) => onMouseDown(e, dotRef)}
+            onPointerDown={(e) => onMouseDown(e, dotRef)}
             ref = {dotRef}
             id = {`${id}`}
         >
@@ -63,7 +63,7 @@ function PatternGrid({isDrawing, setIsDrawing, path, setPath, endPoint, setEndPo
       }
     };
 
-    const handleMouseDown = (e: React.MouseEvent<HTMLDivElement, MouseEvent> | React.TouchEvent<HTMLDivElement>, dotRef: React.RefObject<HTMLDivElement | null>) => {
+    const handleMouseDown = (e: React.PointerEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>, dotRef: React.RefObject<HTMLDivElement | null>) => {
         setIsDrawing(true);
         // We now get the ref directly from the child
         const rect = dotRef.current!.getBoundingClientRect();
@@ -77,12 +77,10 @@ function PatternGrid({isDrawing, setIsDrawing, path, setPath, endPoint, setEndPo
     };
 
     useEffect(() => {
-        const handleMouseMove = (e: MouseEvent | TouchEvent) => {
+        const handleMouseMove = (e: PointerEvent) => {
             if (isDrawing) {
                 e.preventDefault();
-                const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-                const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-                setEndPoint({ x: clientX, y: clientY });
+                setEndPoint({ x: e.clientX, y: e.clientY });
 
                 // Get the ID of the last dot in the path
                 const lastDotId = path.length > 0 ? path[path.length - 1].id : null;
@@ -99,7 +97,7 @@ function PatternGrid({isDrawing, setIsDrawing, path, setPath, endPoint, setEndPo
                         continue;
                     }
 
-                    const distance = Math.hypot(clientX - dotCenterX, clientY - dotCenterY);
+                    const distance = Math.hypot(e.clientX - dotCenterX, e.clientY - dotCenterY);
 
                     const isDotInPath = path.some(p => p.id === dotId);
 
@@ -145,18 +143,14 @@ function PatternGrid({isDrawing, setIsDrawing, path, setPath, endPoint, setEndPo
         };
 
         if (isDrawing) {
-            window.addEventListener('mousemove', handleMouseMove);
-            window.addEventListener('mouseup', handleMouseUp);
+            window.addEventListener('pointermove', handleMouseMove);
+            window.addEventListener('pointerup', handleMouseUp);
 
-            window.addEventListener("touchmove", handleMouseMove as EventListener, {passive: false});
-            window.addEventListener("touchend", handleMouseUp);
         }
 
         return () => {
-            window.removeEventListener('mousemove', handleMouseMove);
-            window.removeEventListener('mouseup', handleMouseUp);
-            window.addEventListener("touchmove", handleMouseMove as EventListener, {passive: false});
-            window.addEventListener("touchend", handleMouseUp);
+            window.removeEventListener('pointermove', handleMouseMove);
+            window.removeEventListener('pointerup', handleMouseUp);
         };
     }, [isDrawing, path]);
 
@@ -166,7 +160,7 @@ function PatternGrid({isDrawing, setIsDrawing, path, setPath, endPoint, setEndPo
     }));
 
     return (
-        <div className="h-[220px] w-[220px] grid grid-cols-4 grid-rows-4 border rounded-md border-[#400]">
+        <div className="h-[220px] w-[220px] grid grid-cols-4 grid-rows-4 border rounded-md border-[#400] touch-none">
             <PatternGridIndvDiv key={0} onMouseDown={handleMouseDown} id={1} setRef={setDotRef}/>
             <PatternGridIndvDiv key={1} onMouseDown={handleMouseDown} id={2} setRef={setDotRef}/>
             <PatternGridIndvDiv key={2} onMouseDown={handleMouseDown} id={3} setRef={setDotRef}/>
