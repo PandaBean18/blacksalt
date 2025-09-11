@@ -69,6 +69,7 @@ function PatternGrid({isDrawing, setIsDrawing, path, setPath, endPoint, setEndPo
         const rect = dotRef.current!.getBoundingClientRect();
         const startX = rect.left + rect.width / 2;
         const startY = rect.top + rect.height / 2;
+        e.preventDefault();
 
         const newPath = [{ x: startX, y: startY, id: parseInt(dotRef.current!.id) }];
         setPath(newPath);
@@ -78,6 +79,7 @@ function PatternGrid({isDrawing, setIsDrawing, path, setPath, endPoint, setEndPo
     useEffect(() => {
         const handleMouseMove = (e: MouseEvent | TouchEvent) => {
             if (isDrawing) {
+                e.preventDefault();
                 const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
                 const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
                 setEndPoint({ x: clientX, y: clientY });
@@ -145,11 +147,16 @@ function PatternGrid({isDrawing, setIsDrawing, path, setPath, endPoint, setEndPo
         if (isDrawing) {
             window.addEventListener('mousemove', handleMouseMove);
             window.addEventListener('mouseup', handleMouseUp);
+
+            window.addEventListener("touchmove", handleMouseMove as EventListener, {passive: false});
+            window.addEventListener("touchend", handleMouseUp);
         }
 
         return () => {
             window.removeEventListener('mousemove', handleMouseMove);
             window.removeEventListener('mouseup', handleMouseUp);
+            window.addEventListener("touchmove", handleMouseMove as EventListener, {passive: false});
+            window.addEventListener("touchend", handleMouseUp);
         };
     }, [isDrawing, path]);
 
@@ -361,7 +368,7 @@ export default function Store() {
                 htmlFor="file-upload" 
                 className="flex items-center justify-between bg-neutral-800 text-[#c1c1c1] rounded-lg px-6 py-4 w-full transition-colors cursor-pointer hover:bg-neutral-700"
                 >
-                <span>Upload document (max 1MB)</span>
+                <span>Upload document (Not implimented)(max 1MB)</span>
 
                 <img 
                     src="/upload.svg" 
