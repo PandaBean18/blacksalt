@@ -372,8 +372,8 @@ export default function Store() {
     }, [dataLoaded]);
 
     return (
-        <div className="w-full h-full flex flex-row md:justify-center p-[20px] md:bg-[#131313]">
-            <div className="bg-[#0a0a0a] flex flex-col justify-start w-full max-w-[400px] min-w-[260px] h-full p-[20px] md:border md:rounded-md md:border-[#4f4f4f]">
+        <div className="w-full h-full overflow-y-auto flex flex-row md:justify-center p-[20px] md:bg-[#131313]">
+            <div className="bg-[#0a0a0a] h-min flex flex-col justify-start w-full max-w-[400px] min-w-[260px] h-full p-[20px] md:border md:rounded-md md:border-[#4f4f4f]">
                 <p className="text-2xl font-semibold">Draw Pattern</p>
                 <div className="w-[20px] h-[20px]"></div>
                 <PatternGrid isDrawing = {isDrawing} setIsDrawing={setIsDrawing} path={path} setPath={setPath} endPoint={endPoint} setEndPoint={setEndPoint} setIsShaking = {setIsShaking}/>
