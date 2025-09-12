@@ -3,14 +3,7 @@ import { db } from '@/lib/firebase';
 import admin from 'firebase-admin';
 
 
-export async function GET(request: Request) {
-    const CRON_SECRET = process.env.CRON_SECRET;
-    const authHeader = request.headers.get('authorization');
-    
-    if (authHeader !== `Bearer ${CRON_SECRET}`) {
-        return new NextResponse('Unauthorized access', { status: 401 });
-    }
-    
+export async function GET(request: Request) {    
     try {
         const FIVE_MINUTES_AGO = new Date();
         FIVE_MINUTES_AGO.setMinutes(FIVE_MINUTES_AGO.getMinutes() - 5);

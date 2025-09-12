@@ -280,7 +280,7 @@ async function generateKeys(patternString: string) {
     };
 }
 
-async function storeData(setIsLoading: React.Dispatch<React.SetStateAction<boolean>>, path: PathPoint[], setIsShaking: React.Dispatch<React.SetStateAction<boolean>>) {
+async function storeData(setIsLoading: React.Dispatch<React.SetStateAction<boolean>>, path: PathPoint[], setIsShaking: React.Dispatch<React.SetStateAction<boolean>>, setDataLoaded: React.Dispatch<React.SetStateAction<boolean>>) {
     setIsLoading(true);
     const textContainer = document.getElementById('userText')!
     const text = (textContainer as HTMLInputElement)!.value
@@ -316,6 +316,7 @@ async function storeData(setIsLoading: React.Dispatch<React.SetStateAction<boole
         
         if (response.ok) {
             setIsLoading(false);
+            setDataLoaded(true);
             return true;
         } else {
             alert("Something went wrong");
@@ -329,12 +330,46 @@ async function storeData(setIsLoading: React.Dispatch<React.SetStateAction<boole
     }
 }
 
+function formatTime(seconds: number) {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    const formattedMinutes = String(minutes).padStart(2, '0');
+    const formattedSeconds = String(remainingSeconds).padStart(2, '0');
+    return `${formattedMinutes}:${formattedSeconds}`;
+};
+
 export default function Store() {
     const [isDrawing, setIsDrawing] = useState(false);
     const [path, setPath] = useState<PathPoint[]>([]);
     const [endPoint, setEndPoint] = useState({ x: 0, y: 0 });
     const [isShaking, setIsShaking] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
+    const [dataLoaded, setDataLoaded] = useState(false);
+    const [countdown, setCountdown] = useState(300);
+
+    useEffect(() => {
+        let timerId: number | undefined;
+
+        if (dataLoaded) {
+
+            setInterval(() => {
+                setCountdown(prevCountdown => {
+                    if (prevCountdown <= 1) {
+                        clearInterval(timerId!);
+                        return 0;
+                    }
+                    timerId = prevCountdown - 1;
+                    return (prevCountdown - 1);
+                });
+            }, 1000);
+        }
+
+        return () => {
+            if (timerId) {
+                clearInterval(timerId);
+            }
+        };
+    }, [dataLoaded]);
 
     return (
         <div className="w-full h-full flex flex-row md:justify-center p-[20px] md:bg-[#131313]">
@@ -352,40 +387,63 @@ export default function Store() {
                 <p className={`text-sm font-normal tracking-[0.00rem] text-[#8a8a8a] ${isShaking ? 'shake' : ''}`} id="infoText">Please connect atleast 6 dots</p>
 
                 <div className="w-[20px] h-[20px]"></div>
-                <textarea
-                    className="bg-neutral-800 text-[#f2f2f2] placeholder-[#c1c1c1] rounded-lg p-[10px] w-full h-[150px] focus:outline-none focus:ring-1 focus:ring-[#4f4f4f] resize-none"
-                    placeholder="Enter text (max 1024 characters)"
-                    id="userText"
-                ></textarea>
-                <div className="w-[20px] h-[20px]"></div>
-                <label 
-                htmlFor="file-upload" 
-                className="flex items-center justify-between bg-neutral-800 text-[#c1c1c1] rounded-lg px-6 py-4 w-full transition-colors cursor-pointer hover:bg-neutral-700"
-                >
-                <span>Upload document (Not implimented)(max 1MB)</span>
+                {!dataLoaded ? <div className="w-full" id="uploadDataSection">
+                    <textarea
+                        className="bg-neutral-800 text-[#f2f2f2] placeholder-[#c1c1c1] rounded-lg p-[10px] w-full h-[150px] focus:outline-none focus:ring-1 focus:ring-[#4f4f4f] resize-none"
+                        placeholder="Enter text (max 1024 characters)"
+                        id="userText"
+                    ></textarea>
+                    <div className="w-[20px] h-[20px]"></div>
+                    <label 
+                    htmlFor="file-upload" 
+                    className="flex items-center justify-between bg-neutral-800 text-[#c1c1c1] rounded-lg px-6 py-4 w-full transition-colors cursor-pointer hover:bg-neutral-700"
+                    >
+                    <span>Upload document (Not implimented)(max 1MB)</span>
 
-                <img 
-                    src="/upload.svg" 
-                    alt="Upload Icon" 
-                    className="w-6 h-6 ml-4" 
-                />
-                
-                <input 
-                    id="file-upload" 
-                    type="file" 
-                    className="hidden" 
-                />
-                </label>
+                    <img 
+                        src="/upload.svg" 
+                        alt="Upload Icon" 
+                        className="w-6 h-6 ml-4" 
+                    />
+                    
+                    <input 
+                        id="file-upload" 
+                        type="file" 
+                        className="hidden" 
+                    />
+                    </label>
 
-                <div className="w-[20px] h-[20px]"></div>
+                    <div className="w-[20px] h-[20px]"></div>
 
-                <button className="bg-[#f2f2f2] text-[#0a0a0a] text-lg font-medium rounded-lg px-6 py-3 transition-colors cursor-pointer hover:bg-neutral-900 hover:text-white flex justify-center items-center" onClick={() => storeData(setIsLoading, path, setIsShaking)}>
-                {
-                    isLoading ? 
-                    <div className="w-6 h-6 rounded-full border-4 border-t-transparent border-gray-300 animate-spin"></div>
-                    : "Store"
-                }
-                </button>
+                    <button className="w-full bg-[#f2f2f2] text-[#0a0a0a] text-lg font-medium rounded-lg px-6 py-3 transition-colors cursor-pointer hover:bg-neutral-900 hover:text-white flex justify-center items-center" onClick={() => storeData(setIsLoading, path, setIsShaking, setDataLoaded)}>
+                    {
+                        isLoading ? 
+                        <div className="w-6 h-6 rounded-full border-4 border-t-transparent border-gray-300 animate-spin"></div>
+                        : "Store"
+                    }
+                    </button>
+                </div> :
+                <div className="flex flex-col items-center p-8 rounded-xl bg-neutral-900 shadow-lg border border-neutral-800 text-center animate-fadeIn">
+                    <div className="w-full flex justify-center mb-2">
+                        <img 
+                        className='w-1/3 min-w-[150px]' 
+                        src="/capy2.png" 
+                        alt="Capybara" 
+                        />
+                    </div>
+
+                    <p className="text-xl text-white font-semibold">
+                        Your data has been uploaded
+                    </p>
+                    
+                    <p className="text-base text-gray-400 font-normal">
+                        It will be available for:
+                    </p>
+
+                    <p className="text-4xl font-bold tracking-tight text-[#4e00bf] animate-pulse">
+                        {formatTime(countdown)}
+                    </p>
+                    </div>}
             </div>
         </div>
     );
