@@ -39,10 +39,10 @@ function DynamicLine({startPoint, endPoint}: {startPoint: Point, endPoint: Point
         left: `${startPoint.x}px`,
         width: `${length}px`,
         transform: `rotate(${angle}deg)`,
-        transformOrigin: '0 0', // Set the rotation origin to the start point
+        transformOrigin: '0 0',
         backgroundColor: 'white',
-        height: '2px', // The thickness of the line
-        zIndex: 10 // Make sure the line is on top of other elements
+        height: '2px',
+        zIndex: 10 
     };
 
     return <div style={st}></div>;
@@ -56,6 +56,7 @@ interface PathPoint {
 
 function PatternGrid({isDrawing, setIsDrawing, path, setPath, endPoint, setEndPoint, setIsShaking}: {isDrawing: boolean, setIsDrawing: React.Dispatch<React.SetStateAction<boolean>>, path: PathPoint[], setPath: React.Dispatch<React.SetStateAction<PathPoint[]>>, endPoint: Point, setEndPoint: React.Dispatch<React.SetStateAction<Point>>, setIsShaking: React.Dispatch<React.SetStateAction<boolean>>}) {
     const allDotRefs = useRef<(HTMLDivElement | null)[]>([]);
+    const gridRef = useRef<HTMLDivElement>(null);
 
     const setDotRef = (el: HTMLDivElement, id: number) => {
       if (el) {
@@ -65,10 +66,11 @@ function PatternGrid({isDrawing, setIsDrawing, path, setPath, endPoint, setEndPo
 
     const handleMouseDown = (e: React.PointerEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>, dotRef: React.RefObject<HTMLDivElement | null>) => {
         setIsDrawing(true);
-        // We now get the ref directly from the child
+        const gridRect = gridRef.current!.getBoundingClientRect();
         const rect = dotRef.current!.getBoundingClientRect();
-        const startX = rect.left + rect.width / 2;
-        const startY = rect.top + rect.height / 2;
+        const startX = rect.left - gridRect.left + rect.width / 2;
+        const startY = rect.top - gridRect.top + rect.height / 2;
+
         e.preventDefault();
 
         const newPath = [{ x: startX, y: startY, id: parseInt(dotRef.current!.id) }];
@@ -80,11 +82,12 @@ function PatternGrid({isDrawing, setIsDrawing, path, setPath, endPoint, setEndPo
         const handleMouseMove = (e: PointerEvent) => {
             if (isDrawing) {
                 e.preventDefault();
-                setEndPoint({ x: e.clientX, y: e.clientY });
+                const gridRect = gridRef.current!.getBoundingClientRect();
 
-                // Get the ID of the last dot in the path
+                setEndPoint({ x: e.clientX-gridRect.left, y: e.clientY - gridRect.top});
+
                 const lastDotId = path.length > 0 ? path[path.length - 1].id : null;
-                // Check for snapping to other dots
+
                 for (const dotEl of allDotRefs.current) {
                     if (!dotEl) continue;
 
@@ -102,8 +105,8 @@ function PatternGrid({isDrawing, setIsDrawing, path, setPath, endPoint, setEndPo
                     const isDotInPath = path.some(p => p.id === dotId);
 
                     if (distance < 20 && !isDotInPath) {
-                        setPath(prevPath => [...prevPath, { x: dotCenterX, y: dotCenterY, id: dotId }]);
-                        setEndPoint({ x: dotCenterX, y: dotCenterY });
+                        setPath(prevPath => [...prevPath, { x: dotCenterX-gridRect.left, y: dotCenterY-gridRect.top, id: dotId }]);
+                        setEndPoint({ x: dotCenterX-gridRect.left, y: dotCenterY-gridRect.top});
                         break;
                     }
                 }
@@ -160,7 +163,7 @@ function PatternGrid({isDrawing, setIsDrawing, path, setPath, endPoint, setEndPo
     }));
 
     return (
-        <div className="h-[220px] w-[220px] grid grid-cols-4 grid-rows-4 border rounded-md border-[#400] touch-none">
+        <div ref={gridRef} className="relative h-[220px] w-[220px] grid grid-cols-4 grid-rows-4 border rounded-md border-[#400] touch-none">
             <PatternGridIndvDiv key={0} onMouseDown={handleMouseDown} id={1} setRef={setDotRef}/>
             <PatternGridIndvDiv key={1} onMouseDown={handleMouseDown} id={2} setRef={setDotRef}/>
             <PatternGridIndvDiv key={2} onMouseDown={handleMouseDown} id={3} setRef={setDotRef}/>
