@@ -7,6 +7,10 @@ type Point = {
     y: number;
 }
 
+type DecryptedFileData ={
+    fileBuffer: ArrayBuffer, 
+}
+
 
 function PatternGridIndvDiv({onMouseDown, id, setRef}: {onMouseDown: (e: React.PointerEvent<HTMLDivElement>, dotRef: React.RefObject<HTMLDivElement | null>) => void, setRef: (el: HTMLDivElement, id: number) => void, id: number})  {
     const dotRef = useRef<HTMLDivElement>(null);
@@ -136,7 +140,6 @@ function PatternGrid({isDrawing, setIsDrawing, path, setPath, endPoint, setEndPo
                     clearGrid(setPath);
                 }
 
-                console.log("Final path:", path.map(p => p.id).join('-'));
             }
         };
 
@@ -273,7 +276,34 @@ async function decryptText(ciphertextHex: string, ivHex: string, keyHex: string)
     return decryptedText;
 }
 
-async function retrieveData(path: PathPoint[], setIsLoading: React.Dispatch<React.SetStateAction<boolean>>, setDataLoaded: React.Dispatch<React.SetStateAction<boolean>>, setTextData: React.Dispatch<React.SetStateAction<string>>) {
+async function decryptFile(fileCiphertext: string, keyHex: string, ivHex: string): Promise<DecryptedFileData | void> {
+    const fileBuffer = hexToBuffer(fileCiphertext);
+    const keyBuffer = hexToBuffer(keyHex);
+    const ivBuffer = hexToBuffer(ivHex);
+    const importedKey = await window.crypto.subtle.importKey(
+    "raw",
+    keyBuffer,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt", "decrypt"]
+    );
+
+    const decryptedBuffer = await window.crypto.subtle.decrypt(
+    {
+        name: "AES-GCM",
+        iv: ivBuffer,
+    },
+    importedKey,
+    fileBuffer
+    );
+
+    
+    return {
+    fileBuffer: decryptedBuffer,
+    } as DecryptedFileData;
+}
+
+async function retrieveData(path: PathPoint[], setIsLoading: React.Dispatch<React.SetStateAction<boolean>>, setDataLoaded: React.Dispatch<React.SetStateAction<boolean>>, setTextData: React.Dispatch<React.SetStateAction<string>>, setFileName: React.Dispatch<React.SetStateAction<string>>) {
     setIsLoading(true);
     const patternString = path.join('-');
     const lookupKey = await generateLookupKey(patternString)
@@ -298,7 +328,6 @@ async function retrieveData(path: PathPoint[], setIsLoading: React.Dispatch<Reac
             
         } else {
             alert("Something went wrong");
-            console.log(1);
             setIsLoading(false);
             return false;
         } 
@@ -312,17 +341,33 @@ async function retrieveData(path: PathPoint[], setIsLoading: React.Dispatch<Reac
     const salt = respJson!.salt;
     const ciphertext = respJson!.ciphertext;
     const iv = respJson!.iv;
+    const fileName = respJson!.fileName;
+    const fileCiphertext = respJson!.fileCiphertext;
+    const fileIv = respJson!.fileIv;
+    let fileUrl: string | null = null;
 
     const decryptionKey = await generateDecryptionKey(patternString, salt);
     const plaintext = await decryptText(ciphertext, iv, decryptionKey);    
+
+    if (fileName !== "") {
+        const decryptedFileData = await decryptFile(fileCiphertext, decryptionKey, fileIv);
+        const blob = new Blob([decryptedFileData!.fileBuffer]);
+
+        fileUrl = URL.createObjectURL(blob);
+        const a = document.getElementById("fileDownloadAnchor") as HTMLAnchorElement;
+        a!.href = fileUrl;
+        a!.download = fileName;
+    }
+
     setIsLoading(false);
     setDataLoaded(true);
     setTextData(plaintext);
+    setFileName(fileName);
     return true;
 
 }
 
-export default function Store() {
+export default function Receive() {
     const [isDrawing, setIsDrawing] = useState(false);
     const [path, setPath] = useState<PathPoint[]>([]);
     const [endPoint, setEndPoint] = useState({ x: 0, y: 0 });
@@ -331,6 +376,7 @@ export default function Store() {
     const [isDataLoaded, setDataLoaded] = useState(false);
     const [textData, setTextData] = useState("")
     const [copyButtonData, setCopyButtonData] = useState("Copy");
+    const [fileName, setFileName] = useState("");
 
     return (
         <div className="w-full h-full overflow-y-auto flex flex-row md:justify-center p-[20px] md:bg-[#131313]">
@@ -348,28 +394,38 @@ export default function Store() {
                 <p className={`text-sm font-normal tracking-[0.00rem] text-[#8a8a8a] ${isShaking ? "shake" : ""}`} id="infoText">Pattern must connect atleast 6 dots</p>
                 <div className="w-[20px] h-[5px]"></div>
                 <p className="text-sm font-normal tracking-[0.00rem] text-[#8a8a8a]">Files only live for 5 minutes</p>
-                <div className="w-[20px] h-[20px]"></div>
-                <button className="bg-[#f2f2f2] text-[#0a0a0a] text-lg font-medium rounded-lg px-6 py-3 transition-colors cursor-pointer hover:bg-neutral-900 hover:text-white flex justify-center items-center" onClick={()=>retrieveData(path, setIsLoading, setDataLoaded, setTextData)}>
+                {isDataLoaded ? '' : <div className="w-[20px] h-[20px]"></div>}
+                {isDataLoaded ? '' : <button className="bg-[#f2f2f2] text-[#0a0a0a] text-lg font-medium rounded-lg px-6 py-3 transition-colors cursor-pointer hover:bg-neutral-900 hover:text-white flex justify-center items-center" onClick={()=>retrieveData(path, setIsLoading, setDataLoaded, setTextData, setFileName)}>
                 {
                     isLoading ? 
                     <div className="w-6 h-6 rounded-full border-4 border-t-transparent border-gray-300 animate-spin"></div>
                     : "Fetch"
                 }
-                </button>
+                </button>}
                 <div className="h-[50px] w-[50px]"></div>
                 { !isDataLoaded ? <div className="w-full h-[175px] flex flex-row justify-around items-center">
                         <img src="/capy.png" alt="capy" className="w-1/2" />
                         <p className="text-[#8a8a8a] tracking-[0.00rem] font-normal">Your data will show up here</p>
                     </div> :
-                    <div className="w-full h-[150px] bg-neutral-800 rounded-lg flex flex-col justify-start">
-                        <div className="w-full h-[30px] p-[5px] pr-[10px] pb-0 flex flex-row justify-end items-center">
-                            <button className="hover:cursor-pointer text-[#c1c1c1]" onClick={() => {navigator.clipboard.writeText(textData); setCopyButtonData("Copied!")}}>{copyButtonData}</button>
+                    <div>
+                        <div className="w-full h-[150px] bg-neutral-800 rounded-lg flex flex-col justify-start">
+                            <div className="w-full h-[30px] p-[5px] pr-[10px] pb-0 flex flex-row justify-end items-center">
+                                <button className="hover:cursor-pointer text-[#c1c1c1]" onClick={() => {navigator.clipboard.writeText(textData); setCopyButtonData("Copied!")}}>{copyButtonData}</button>
+                            </div>
+                            <div className="w-full h-[120px] p-[10px] pt-0 overflow-y-auto text-wrap">
+                                <p className="tracking-[0.00rem] text-[#f2f2f2] font-normal" id="dataTextField">{textData}</p>
+                            </div>
                         </div>
-                        <div className="w-full h-[120px] p-[10px] pt-0 overflow-y-auto text-wrap">
-                            <p className="tracking-[0.00rem] text-[#f2f2f2] font-normal" id="dataTextField">{textData}</p>
-                        </div>
+                        <div className="h-[25px]"></div>
+                        
                     </div>
                 }
+
+                <a id="fileDownloadAnchor">
+                    <div className={`bg-[#f2f2f2] text-[#0a0a0a] text-lg font-medium rounded-lg px-6 py-3 transition-colors cursor-pointer hover:bg-neutral-900 hover:text-white flex justify-center items-center ${(fileName === '') ? 'hidden' : ''}`}>
+                        <p>Download {fileName}</p>
+                    </div>
+                </a>
             </div>
         </div>
     );

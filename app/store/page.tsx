@@ -7,6 +7,11 @@ type Point = {
     y: number;
 }
 
+type EncryptedFileData ={
+    fileCiphertext: string, 
+    fileIv: string, 
+    fileName: string,
+}
 
 function PatternGridIndvDiv({onMouseDown, id, setRef}: {onMouseDown: (e: React.PointerEvent<HTMLDivElement>, dotRef: React.RefObject<HTMLDivElement | null>) => void, setRef: (el: HTMLDivElement, id: number) => void, id: number})  {
     const dotRef = useRef<HTMLDivElement>(null);
@@ -141,7 +146,6 @@ function PatternGrid({isDrawing, setIsDrawing, path, setPath, endPoint, setEndPo
                     clearGrid(setPath);
                 }
 
-                console.log("Final path:", path.map(p => p.id).join('-'));
             }
         };
 
@@ -238,6 +242,60 @@ async function encryptText(text: string, keyHex: string) {
     };
 }
 
+async function encryptFile(file: File, keyHex: string): Promise<EncryptedFileData | void> {
+    return new Promise(async (resolve, reject) => {
+        const reader = new FileReader();
+
+        reader.onload = async (event) => {
+        try {
+            const fileBuffer = event.target!.result as ArrayBuffer;
+
+            if (fileBuffer === null) {
+                return;
+            }
+
+            const keyBuffer = hexToBuffer(keyHex);
+            const importedKey = await window.crypto.subtle.importKey(
+            "raw",
+            keyBuffer,
+            { name: "AES-GCM", length: 256 },
+            false,
+            ["encrypt", "decrypt"]
+            );
+
+            const iv = window.crypto.getRandomValues(new Uint8Array(12));
+            
+            const encryptedBuffer = await window.crypto.subtle.encrypt(
+            {
+                name: "AES-GCM",
+                iv: iv,
+            },
+            importedKey,
+            fileBuffer
+            );
+
+            const ivHex = Array.from(iv).map(b => b.toString(16).padStart(2, '0')).join('');
+            const ciphertextHex = Array.from(new Uint8Array(encryptedBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+            
+            resolve({
+            fileCiphertext: ciphertextHex,
+            fileIv: ivHex,
+            fileName: file.name, 
+            } as EncryptedFileData);
+        } catch (e) {
+            reject(e);
+        }
+        };
+
+        reader.onerror = (e) => {
+        reject(e);
+        };
+
+        reader.readAsArrayBuffer(file);
+    });
+}
+
+
 async function generateKeys(patternString: string) {
     const patternBuffer = new TextEncoder().encode(patternString);
 
@@ -283,7 +341,7 @@ async function generateKeys(patternString: string) {
     };
 }
 
-async function storeData(setIsLoading: React.Dispatch<React.SetStateAction<boolean>>, path: PathPoint[], setIsShaking: React.Dispatch<React.SetStateAction<boolean>>, setDataLoaded: React.Dispatch<React.SetStateAction<boolean>>) {
+async function storeData(setIsLoading: React.Dispatch<React.SetStateAction<boolean>>, path: PathPoint[], setIsShaking: React.Dispatch<React.SetStateAction<boolean>>, setDataLoaded: React.Dispatch<React.SetStateAction<boolean>>, file: File | null) {
     setIsLoading(true);
     const textContainer = document.getElementById('userText')!
     const text = (textContainer as HTMLInputElement)!.value
@@ -305,7 +363,17 @@ async function storeData(setIsLoading: React.Dispatch<React.SetStateAction<boole
         lookupKey: keys.lookupKey,
         salt: keys.salt,
         iv: encryptedData.iv,
-        ciphertext: encryptedData.ciphertext
+        ciphertext: encryptedData.ciphertext,
+        fileCiphertext: "",
+        fileIv: "",
+        fileName: "",
+    }
+
+    if (file) {
+        const d = await encryptFile(file, keys.encryptionKey);
+        payload.fileCiphertext = d!.fileCiphertext;
+        payload.fileIv = d!.fileIv;
+        payload.fileName = d!.fileName
     }
 
     try {
@@ -349,6 +417,9 @@ export default function Store() {
     const [isLoading, setIsLoading] = useState(false);
     const [dataLoaded, setDataLoaded] = useState(false);
     const [countdown, setCountdown] = useState(300);
+    const [file, setFile] = useState<File | null>(null);
+    const [fileButtonText, setFileButtonText] = useState('Upload document (max 500KB)')
+    const [fileUploadIconStatus, setFileUploadIconStatus] = useState('block');
 
     useEffect(() => {
         let timerId: number | undefined;
@@ -373,6 +444,18 @@ export default function Store() {
             }
         };
     }, [dataLoaded]);
+
+    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target!.files?.[0];
+
+        if (!file) {
+            return;
+        }
+
+        setFileButtonText(file.name);
+        setFile(file);
+        setFileUploadIconStatus('hidden')
+    }
 
     return (
         <div className="w-full h-full overflow-y-auto flex flex-row md:justify-center p-[20px] md:bg-[#131313]">
@@ -401,24 +484,25 @@ export default function Store() {
                     htmlFor="file-upload" 
                     className="flex items-center justify-between bg-neutral-800 text-[#c1c1c1] rounded-lg px-6 py-4 w-full transition-colors cursor-pointer hover:bg-neutral-700"
                     >
-                    <span>Upload document (Not implimented)(max 1MB)</span>
+                    <span>{fileButtonText}</span>
 
                     <img 
                         src="/upload.svg" 
                         alt="Upload Icon" 
-                        className="w-6 h-6 ml-4" 
+                        className={`w-6 h-6 ml-4 ${fileUploadIconStatus}`}
                     />
                     
                     <input 
                         id="file-upload" 
                         type="file" 
                         className="hidden" 
+                        onChange={handleFileChange}
                     />
                     </label>
 
                     <div className="w-[20px] h-[20px]"></div>
 
-                    <button className="w-full bg-[#f2f2f2] text-[#0a0a0a] text-lg font-medium rounded-lg px-6 py-3 transition-colors cursor-pointer hover:bg-neutral-900 hover:text-white flex justify-center items-center" onClick={() => storeData(setIsLoading, path, setIsShaking, setDataLoaded)}>
+                    <button className="w-full bg-[#f2f2f2] text-[#0a0a0a] text-lg font-medium rounded-lg px-6 py-3 transition-colors cursor-pointer hover:bg-neutral-900 hover:text-white flex justify-center items-center" onClick={() => storeData(setIsLoading, path, setIsShaking, setDataLoaded, file)}>
                     {
                         isLoading ? 
                         <div className="w-6 h-6 rounded-full border-4 border-t-transparent border-gray-300 animate-spin"></div>

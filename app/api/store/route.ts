@@ -19,7 +19,7 @@ export async function POST(request: Request) {
 
     try {
         const payload = await request.json();
-        const { lookupKey, salt, iv, ciphertext } = payload;
+        const { lookupKey, salt, iv, ciphertext, fileCiphertext, fileIv, fileName } = payload;
         
         if (!lookupKey || !salt || !iv || !ciphertext) {
             return new NextResponse(JSON.stringify({ error: 'Missing required fields' }), { status: 400 });
@@ -29,6 +29,9 @@ export async function POST(request: Request) {
             salt: salt,
             iv: iv,
             ciphertext: ciphertext,
+            fileCiphertext: fileCiphertext, 
+            fileIv: fileIv,
+            fileName: fileName,
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
         });
 

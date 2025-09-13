@@ -47,6 +47,9 @@ export async function POST(request: Request) {
             salt: data?.salt,
             iv: data?.iv,
             ciphertext: data?.ciphertext,
+            fileCiphertext: data?.fileCiphertext,
+            fileIv: data?.fileIv, 
+            fileName: data?.fileName
         }), { status: 200 });
 
     } catch (error) {
