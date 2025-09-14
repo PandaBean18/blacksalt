@@ -150,6 +150,8 @@ function PatternGrid({isDrawing, setIsDrawing, path, setPath, endPoint, setEndPo
                 const unsafePaths = [
                     [1, 5, 9, 13, 14, 15, 16], 
                     [16, 15, 14, 13, 9, 5, 1],
+                    [1, 5, 9, 13, 14, 15], 
+                    [15, 14, 13, 9, 5, 1],
                     [4, 3, 2, 1, 5, 9, 13, 14, 15, 16],
                     [16, 15, 14, 13, 9, 5, 1, 2, 3, 4],
                     [13, 9, 5, 1, 2, 3, 4, 8, 12, 16],
@@ -164,7 +166,7 @@ function PatternGrid({isDrawing, setIsDrawing, path, setPath, endPoint, setEndPo
                             return false;
                         }
                     }
-                    return true;
+                    return (e.length == cleanedPath.length);
                 })) {
                     console.log("Unsafe")
                     const buttonHandler = () => {
