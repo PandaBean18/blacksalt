@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useRef, useEffect } from "react";
+import ErrorDiv from "../components/errorDiv";
 
 type Point = {
     x: number;
@@ -59,7 +60,7 @@ interface PathPoint {
   id: number;
 }
 
-function PatternGrid({isDrawing, setIsDrawing, path, setPath, endPoint, setEndPoint, setIsShaking}: {isDrawing: boolean, setIsDrawing: React.Dispatch<React.SetStateAction<boolean>>, path: PathPoint[], setPath: React.Dispatch<React.SetStateAction<PathPoint[]>>, endPoint: Point, setEndPoint: React.Dispatch<React.SetStateAction<Point>>, setIsShaking: React.Dispatch<React.SetStateAction<boolean>>}) {
+function PatternGrid({isDrawing, setIsDrawing, path, setPath, endPoint, setEndPoint, setIsShaking, setIsErrorVisible, setIsError, setErrorText, setErrorHandler}: {isDrawing: boolean, setIsDrawing: React.Dispatch<React.SetStateAction<boolean>>, path: PathPoint[], setPath: React.Dispatch<React.SetStateAction<PathPoint[]>>, endPoint: Point, setEndPoint: React.Dispatch<React.SetStateAction<Point>>, setIsShaking: React.Dispatch<React.SetStateAction<boolean>>, setIsErrorVisible: React.Dispatch<React.SetStateAction<boolean>>, setIsError: React.Dispatch<React.SetStateAction<boolean>>, setErrorText: React.Dispatch<React.SetStateAction<string>>, setErrorHandler: React.Dispatch<React.SetStateAction<React.MouseEventHandler<HTMLButtonElement>>>}) {
     const allDotRefs = useRef<(HTMLDivElement | null)[]>([]);
     const gridRef = useRef<HTMLDivElement>(null);
 
@@ -122,7 +123,7 @@ function PatternGrid({isDrawing, setIsDrawing, path, setPath, endPoint, setEndPo
             if (isDrawing) {
                 setIsDrawing(false);
 
-                const cleanedPath = [];
+                const cleanedPath: PathPoint[] = [];
                 let lastId = null;
 
                 for (const point of path) {
@@ -144,6 +145,38 @@ function PatternGrid({isDrawing, setIsDrawing, path, setPath, endPoint, setEndPo
                     }, 3000);
 
                     clearGrid(setPath);
+                }
+
+                const unsafePaths = [
+                    [1, 5, 9, 13, 14, 15, 16], 
+                    [16, 15, 14, 13, 9, 5, 1],
+                    [4, 3, 2, 1, 5, 9, 13, 14, 15, 16],
+                    [16, 15, 14, 13, 9, 5, 1, 2, 3, 4],
+                    [13, 9, 5, 1, 2, 3, 4, 8, 12, 16],
+                    [16, 12, 8, 4, 3, 2, 1, 5, 9, 13],
+                    [1, 5, 9, 13, 14, 15, 16, 12, 8, 4],
+                    [4, 8, 12, 16, 15, 14, 13, 9, 5, 1]   
+                ]
+
+                if (unsafePaths.some((e) => {
+                    for(let i = 0; i < cleanedPath.length; i++) {
+                        if (e[i] !== cleanedPath[i].id) {
+                            return false;
+                        }
+                    }
+                    return true;
+                })) {
+                    console.log("Unsafe")
+                    const buttonHandler = () => {
+                        setIsErrorVisible(false);
+                        setIsError(false);
+                        setErrorText(""); 
+                    }
+
+                    setIsErrorVisible(true);
+                    setIsError(false);
+                    setErrorText("The pattern that you have selected is very common and can be guessed easily! Only proceed if you're uploading non-sensitive data.");
+                    setErrorHandler(() => buttonHandler)
                 }
 
             }
@@ -341,7 +374,7 @@ async function generateKeys(patternString: string) {
     };
 }
 
-async function storeData(setIsLoading: React.Dispatch<React.SetStateAction<boolean>>, path: PathPoint[], setIsShaking: React.Dispatch<React.SetStateAction<boolean>>, setDataLoaded: React.Dispatch<React.SetStateAction<boolean>>, file: File | null) {
+async function storeData(setIsLoading: React.Dispatch<React.SetStateAction<boolean>>, path: PathPoint[], setIsShaking: React.Dispatch<React.SetStateAction<boolean>>, setDataLoaded: React.Dispatch<React.SetStateAction<boolean>>, file: File | null, setIsErrorVisible: React.Dispatch<React.SetStateAction<boolean>>, setIsError: React.Dispatch<React.SetStateAction<boolean>>, setErrorText: React.Dispatch<React.SetStateAction<string>>, setErrorHandler: React.Dispatch<React.SetStateAction<React.MouseEventHandler<HTMLButtonElement>>>) {
     setIsLoading(true);
     const textContainer = document.getElementById('userText')!
     const text = (textContainer as HTMLInputElement)!.value
@@ -352,9 +385,28 @@ async function storeData(setIsLoading: React.Dispatch<React.SetStateAction<boole
         setTimeout(() => {
             setIsShaking(false);
         }, 3000)
+        return false;
+    }
+
+    if (text.length > 1024) {
+        const buttonHandler = () => {
+            setIsErrorVisible(false);
+            setIsError(false);
+            setErrorText('');
+            (textContainer as HTMLInputElement)!.value = '';
+        }
+
+        setIsErrorVisible(true);
+        setIsError(true);
+        setErrorText('Character count of text cannot exceed 1024.')
+        setErrorHandler(() => buttonHandler)
+
+        setIsLoading(false);
+        return false;
     }
 
     const patternString: string = path.join('-');
+
     const keys = await generateKeys(patternString);
 
     const encryptedData = await encryptText(text, keys.encryptionKey);
@@ -390,12 +442,32 @@ async function storeData(setIsLoading: React.Dispatch<React.SetStateAction<boole
             setDataLoaded(true);
             return true;
         } else {
-            alert("Something went wrong");
+            const buttonHandler = () => {
+                setIsErrorVisible(false);
+                setIsError(false);
+                setErrorText('');
+                (textContainer as HTMLInputElement)!.value = '';
+            }
+
+            setIsErrorVisible(true);
+            setIsError(true);
+            setErrorText('Data could not be stored')
+            setErrorHandler(() => buttonHandler)
             setIsLoading(false);
             return false;
         } 
     } catch (error) {
-        alert("Something went wrong");
+        const buttonHandler = () => {
+            setIsErrorVisible(false);
+            setIsError(false);
+            setErrorText('');
+            (textContainer as HTMLInputElement)!.value = '';
+        }
+
+        setIsErrorVisible(true);
+        setIsError(true);
+        setErrorText('Data could not be stored');
+        setErrorHandler(() => buttonHandler);
         setIsLoading(false);
         return false;
     }
@@ -420,6 +492,10 @@ export default function Store() {
     const [file, setFile] = useState<File | null>(null);
     const [fileButtonText, setFileButtonText] = useState('Upload document (max 500KB)')
     const [fileUploadIconStatus, setFileUploadIconStatus] = useState('block');
+    const [isErrorVisible, setIsErrorVisible] = useState(false);
+    const [isError, setIsError] = useState(false);
+    const [errorText, setErrorText] = useState('');
+    const [errorHandler, setErrorHandler] = useState<React.MouseEventHandler<HTMLButtonElement>>(() => {})
 
     useEffect(() => {
         let timerId: number | undefined;
@@ -452,6 +528,22 @@ export default function Store() {
             return;
         }
 
+        const maxFileSizeInBytes = 500 * 1024;
+
+        if (file.size > maxFileSizeInBytes) {
+            const buttonHandler = () => {
+                setIsErrorVisible(false);
+                setIsError(false);
+                setErrorText("");
+            }
+
+            setIsErrorVisible(true);
+            setIsError(true);
+            setErrorText("File size can not exceed 500KB");
+            setErrorHandler(() => buttonHandler);
+            return;
+        }
+
         setFileButtonText(file.name);
         setFile(file);
         setFileUploadIconStatus('hidden')
@@ -459,10 +551,10 @@ export default function Store() {
 
     return (
         <div className="w-full h-full overflow-y-auto flex flex-row md:justify-center p-[20px] md:bg-[#131313]">
-            <div className="bg-[#0a0a0a] h-min flex flex-col justify-start w-full max-w-[400px] min-w-[260px] h-full p-[20px] md:border md:rounded-md md:border-[#4f4f4f]">
+            <div className="bg-[#0a0a0a] h-min flex flex-col justify-start w-full max-w-[400px] min-w-[260px] h-full p-[20px] md:border md:rounded-md md:border-[#4f4f4f]" id="mainContainer">
                 <p className="text-2xl font-semibold">Draw Pattern</p>
                 <div className="w-[20px] h-[20px]"></div>
-                <PatternGrid isDrawing = {isDrawing} setIsDrawing={setIsDrawing} path={path} setPath={setPath} endPoint={endPoint} setEndPoint={setEndPoint} setIsShaking = {setIsShaking}/>
+                <PatternGrid isDrawing = {isDrawing} setIsDrawing={setIsDrawing} path={path} setPath={setPath} endPoint={endPoint} setEndPoint={setEndPoint} setIsShaking = {setIsShaking} setIsErrorVisible={setIsErrorVisible} setIsError={setIsError} setErrorText={setErrorText} setErrorHandler={setErrorHandler}/>
                 <div className="w-[20px] h-[10px]"></div>
                 <button className="w-[150px] bg-neutral-800 text-white font-medium text-base rounded-lg px-4 py-2 transition-colors hover:bg-neutral-700" onClick={() => clearGrid(setPath)}>
                     Clear Pattern
@@ -502,7 +594,7 @@ export default function Store() {
 
                     <div className="w-[20px] h-[20px]"></div>
 
-                    <button className="w-full bg-[#f2f2f2] text-[#0a0a0a] text-lg font-medium rounded-lg px-6 py-3 transition-colors cursor-pointer hover:bg-neutral-900 hover:text-white flex justify-center items-center" onClick={() => storeData(setIsLoading, path, setIsShaking, setDataLoaded, file)}>
+                    <button className="w-full bg-[#f2f2f2] text-[#0a0a0a] text-lg font-medium rounded-lg px-6 py-3 transition-colors cursor-pointer hover:bg-neutral-900 hover:text-white flex justify-center items-center" onClick={() => storeData(setIsLoading, path, setIsShaking, setDataLoaded, file, setIsErrorVisible, setIsError, setErrorText, setErrorHandler)}>
                     {
                         isLoading ? 
                         <div className="w-6 h-6 rounded-full border-4 border-t-transparent border-gray-300 animate-spin"></div>
@@ -532,6 +624,8 @@ export default function Store() {
                     </p>
                     </div>}
             </div>
+
+            {isErrorVisible ? <ErrorDiv isError={isError} textContent={errorText} buttonHandler={errorHandler} /> : ''}
         </div>
     );
 }

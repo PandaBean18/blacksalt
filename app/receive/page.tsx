@@ -1,6 +1,7 @@
 "use client"
 
 import React, { useState, useRef, useEffect } from "react";
+import ErrorDiv from "../components/errorDiv";
 
 type Point = {
     x: number;
@@ -303,7 +304,7 @@ async function decryptFile(fileCiphertext: string, keyHex: string, ivHex: string
     } as DecryptedFileData;
 }
 
-async function retrieveData(path: PathPoint[], setIsLoading: React.Dispatch<React.SetStateAction<boolean>>, setDataLoaded: React.Dispatch<React.SetStateAction<boolean>>, setTextData: React.Dispatch<React.SetStateAction<string>>, setFileName: React.Dispatch<React.SetStateAction<string>>) {
+async function retrieveData(path: PathPoint[], setIsLoading: React.Dispatch<React.SetStateAction<boolean>>, setDataLoaded: React.Dispatch<React.SetStateAction<boolean>>, setTextData: React.Dispatch<React.SetStateAction<string>>, setFileName: React.Dispatch<React.SetStateAction<string>>, setIsErrorVisible: React.Dispatch<React.SetStateAction<boolean>>, setIsError: React.Dispatch<React.SetStateAction<boolean>>, setErrorText: React.Dispatch<React.SetStateAction<string>>, setErrorHandler: React.Dispatch<React.SetStateAction<React.MouseEventHandler<HTMLButtonElement>>>) {
     setIsLoading(true);
     const patternString = path.join('-');
     const lookupKey = await generateLookupKey(patternString)
@@ -327,13 +328,30 @@ async function retrieveData(path: PathPoint[], setIsLoading: React.Dispatch<Reac
             respJson = await response.json();
             
         } else {
-            alert("Something went wrong");
+                const buttonHandler = () => {
+                setIsErrorVisible(false);
+                setIsError(false);
+                setErrorText('');
+            }
+
+            setIsErrorVisible(true);
+            setIsError(true);
+            setErrorText('Data could not be fetched. Lifetime may have expired')
+            setErrorHandler(() => buttonHandler)
             setIsLoading(false);
             return false;
         } 
     } catch (error) {
-        alert("Something went wrong");
-        console.log(error);
+        const buttonHandler = () => {
+            setIsErrorVisible(false);
+            setIsError(false);
+            setErrorText('');
+        }
+
+        setIsErrorVisible(true);
+        setIsError(true);
+        setErrorText('Data could not be fetched');
+        setErrorHandler(() => buttonHandler);
         setIsLoading(false);
         return false;
     }
@@ -377,6 +395,10 @@ export default function Receive() {
     const [textData, setTextData] = useState("")
     const [copyButtonData, setCopyButtonData] = useState("Copy");
     const [fileName, setFileName] = useState("");
+    const [isErrorVisible, setIsErrorVisible] = useState(false);
+    const [isError, setIsError] = useState(false);
+    const [errorText, setErrorText] = useState('');
+    const [errorHandler, setErrorHandler] = useState<React.MouseEventHandler<HTMLButtonElement>>(() => {})
 
     return (
         <div className="w-full h-full overflow-y-auto flex flex-row md:justify-center p-[20px] md:bg-[#131313]">
@@ -395,7 +417,7 @@ export default function Receive() {
                 <div className="w-[20px] h-[5px]"></div>
                 <p className="text-sm font-normal tracking-[0.00rem] text-[#8a8a8a]">Files only live for 5 minutes</p>
                 {isDataLoaded ? '' : <div className="w-[20px] h-[20px]"></div>}
-                {isDataLoaded ? '' : <button className="bg-[#f2f2f2] text-[#0a0a0a] text-lg font-medium rounded-lg px-6 py-3 transition-colors cursor-pointer hover:bg-neutral-900 hover:text-white flex justify-center items-center" onClick={()=>retrieveData(path, setIsLoading, setDataLoaded, setTextData, setFileName)}>
+                {isDataLoaded ? '' : <button className="bg-[#f2f2f2] text-[#0a0a0a] text-lg font-medium rounded-lg px-6 py-3 transition-colors cursor-pointer hover:bg-neutral-900 hover:text-white flex justify-center items-center" onClick={()=>retrieveData(path, setIsLoading, setDataLoaded, setTextData, setFileName, setIsErrorVisible, setIsError, setErrorText, setErrorHandler)}>
                 {
                     isLoading ? 
                     <div className="w-6 h-6 rounded-full border-4 border-t-transparent border-gray-300 animate-spin"></div>
@@ -427,6 +449,7 @@ export default function Receive() {
                     </div>
                 </a>
             </div>
+            {isErrorVisible ? <ErrorDiv isError={isError} textContent={errorText} buttonHandler={errorHandler} /> : ''}
         </div>
     );
 }
