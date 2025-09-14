@@ -576,7 +576,7 @@ export default function Store() {
                     htmlFor="file-upload" 
                     className="flex items-center justify-between bg-neutral-800 text-[#c1c1c1] rounded-lg px-6 py-4 w-full transition-colors cursor-pointer hover:bg-neutral-700"
                     >
-                    <span>{fileButtonText}</span>
+                    <span className="overflow-x-hidden">{fileButtonText}</span>
 
                     <img 
                         src="/upload.svg" 

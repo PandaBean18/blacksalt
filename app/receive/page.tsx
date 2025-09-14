@@ -430,14 +430,14 @@ export default function Receive() {
                         <p className="text-[#8a8a8a] tracking-[0.00rem] font-normal">Your data will show up here</p>
                     </div> :
                     <div>
-                        <div className="w-full h-[150px] bg-neutral-800 rounded-lg flex flex-col justify-start">
+                        {textData === "" ? '' : <div className="w-full h-[150px] bg-neutral-800 rounded-lg flex flex-col justify-start">
                             <div className="w-full h-[30px] p-[5px] pr-[10px] pb-0 flex flex-row justify-end items-center">
                                 <button className="hover:cursor-pointer text-[#c1c1c1]" onClick={() => {navigator.clipboard.writeText(textData); setCopyButtonData("Copied!")}}>{copyButtonData}</button>
                             </div>
                             <div className="w-full h-[120px] p-[10px] pt-0 overflow-y-auto text-wrap">
                                 <p className="tracking-[0.00rem] text-[#f2f2f2] font-normal" id="dataTextField">{textData}</p>
                             </div>
-                        </div>
+                        </div>}
                         <div className="h-[25px]"></div>
                         
                     </div>
@@ -445,7 +445,7 @@ export default function Receive() {
 
                 <a id="fileDownloadAnchor">
                     <div className={`bg-[#f2f2f2] text-[#0a0a0a] text-lg font-medium rounded-lg px-6 py-3 transition-colors cursor-pointer hover:bg-neutral-900 hover:text-white flex justify-center items-center ${(fileName === '') ? 'hidden' : ''}`}>
-                        <p>Download {fileName}</p>
+                        <p className="overflow-x-hidden">Download {fileName}</p>
                     </div>
                 </a>
             </div>
