@@ -2,7 +2,7 @@ import React from "react";
 
 export default function ErrorDiv({height = "150px", width = "360px", isError, buttonHandler, textContent}: {height?: string, width?: string, isError: boolean, buttonHandler: React.MouseEventHandler<HTMLButtonElement>, textContent: string}) {
     return (
-        <div className="w-[100%] h-[100%] absolute top-0">
+        <div className="w-[100%] h-[100%] absolute top-0 z-100">
             <div className="absolute bg-[#222] w-full h-full opacity-50"></div>
             <div className={`absolute bg-[#0a0a0a] rounded-lg border border-[#3f3f3f] p-[20px] pt-[10px] pb-[15px] flex flex-col justify-between items-center`} style={{height: 'max-content', width: width, left: `calc(50% - calc(${width} / 2))`, top: `calc(50% - calc(${height} / 2))`}}>
                 <p className="text-2xl font-semibold h-[24px]" style={{color: `${isError ? '#a80000' : '#ff8c00'}`}}>{isError ? "Error" : "Important"}</p>
