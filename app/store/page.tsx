@@ -376,7 +376,7 @@ async function generateKeys(patternString: string) {
     };
 }
 
-async function storeData(setIsLoading: React.Dispatch<React.SetStateAction<boolean>>, path: PathPoint[], setIsShaking: React.Dispatch<React.SetStateAction<boolean>>, setDataLoaded: React.Dispatch<React.SetStateAction<boolean>>, file: File | null, setIsErrorVisible: React.Dispatch<React.SetStateAction<boolean>>, setIsError: React.Dispatch<React.SetStateAction<boolean>>, setErrorText: React.Dispatch<React.SetStateAction<string>>, setErrorHandler: React.Dispatch<React.SetStateAction<React.MouseEventHandler<HTMLButtonElement>>>, setUniqueNumber: React.Dispatch<React.SetStateAction<Number | null>>) {
+async function storeData(setIsLoading: React.Dispatch<React.SetStateAction<boolean>>, path: PathPoint[], setIsShaking: React.Dispatch<React.SetStateAction<boolean>>, setDataLoaded: React.Dispatch<React.SetStateAction<boolean>>, file: File | null, setIsErrorVisible: React.Dispatch<React.SetStateAction<boolean>>, setIsError: React.Dispatch<React.SetStateAction<boolean>>, setErrorText: React.Dispatch<React.SetStateAction<string>>, setErrorHandler: React.Dispatch<React.SetStateAction<React.MouseEventHandler<HTMLButtonElement>>>, setUniqueNumber: React.Dispatch<React.SetStateAction<number | null>>) {
     setIsLoading(true);
     const textContainer = document.getElementById('userText')!
     const text = (textContainer as HTMLInputElement)!.value
@@ -444,7 +444,7 @@ async function storeData(setIsLoading: React.Dispatch<React.SetStateAction<boole
             setDataLoaded(true);
             const data = await response.json() as JsonObject;
             if (data.uniqueNumber) {
-                setUniqueNumber(data.uniqueNumber as Number);
+                setUniqueNumber(data.uniqueNumber as number);
             }
             
             return true;
@@ -503,7 +503,7 @@ export default function Store() {
     const [isError, setIsError] = useState(false);
     const [errorText, setErrorText] = useState('');
     const [errorHandler, setErrorHandler] = useState<React.MouseEventHandler<HTMLButtonElement>>(() => {})
-    const [uniqueNumber, setUniqueNumber] = useState<Number | null>(null);
+    const [uniqueNumber, setUniqueNumber] = useState<number | null>(null);
 
     useEffect(() => {
         let timerId: number | undefined;
