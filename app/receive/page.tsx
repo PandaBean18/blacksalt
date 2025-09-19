@@ -304,13 +304,29 @@ async function decryptFile(fileCiphertext: string, keyHex: string, ivHex: string
     } as DecryptedFileData;
 }
 
-async function retrieveData(path: PathPoint[], setIsLoading: React.Dispatch<React.SetStateAction<boolean>>, setDataLoaded: React.Dispatch<React.SetStateAction<boolean>>, setTextData: React.Dispatch<React.SetStateAction<string>>, setFileName: React.Dispatch<React.SetStateAction<string>>, setIsErrorVisible: React.Dispatch<React.SetStateAction<boolean>>, setIsError: React.Dispatch<React.SetStateAction<boolean>>, setErrorText: React.Dispatch<React.SetStateAction<string>>, setErrorHandler: React.Dispatch<React.SetStateAction<React.MouseEventHandler<HTMLButtonElement>>>) {
+async function retrieveData(path: PathPoint[], setIsLoading: React.Dispatch<React.SetStateAction<boolean>>, setDataLoaded: React.Dispatch<React.SetStateAction<boolean>>, setTextData: React.Dispatch<React.SetStateAction<string>>, setFileName: React.Dispatch<React.SetStateAction<string>>, setIsErrorVisible: React.Dispatch<React.SetStateAction<boolean>>, setIsError: React.Dispatch<React.SetStateAction<boolean>>, setErrorText: React.Dispatch<React.SetStateAction<string>>, setErrorHandler: React.Dispatch<React.SetStateAction<React.MouseEventHandler<HTMLButtonElement>>>, uniqueNumber: string | null) {
     setIsLoading(true);
     const patternString = path.join('-');
-    const lookupKey = await generateLookupKey(patternString)
+    const lookupKey = await generateLookupKey(patternString);
+
+    if (uniqueNumber === null || uniqueNumber.length < 3) {
+        const buttonHandler = () => {
+            setIsErrorVisible(false);
+            setIsError(false);
+            setErrorText('');
+        }
+
+        setIsErrorVisible(true);
+        setIsError(true);
+        setErrorText('Please enter a valid code')
+        setErrorHandler(() => buttonHandler)
+        setIsLoading(false);
+        return false;
+    }
 
     const payload = {
         lookupKey: lookupKey,
+        uniqueNumber: uniqueNumber
     }
 
     let respJson = null;
@@ -328,7 +344,7 @@ async function retrieveData(path: PathPoint[], setIsLoading: React.Dispatch<Reac
             respJson = await response.json();
             
         } else {
-                const buttonHandler = () => {
+            const buttonHandler = () => {
                 setIsErrorVisible(false);
                 setIsError(false);
                 setErrorText('');
@@ -399,6 +415,15 @@ export default function Receive() {
     const [isError, setIsError] = useState(false);
     const [errorText, setErrorText] = useState('');
     const [errorHandler, setErrorHandler] = useState<React.MouseEventHandler<HTMLButtonElement>>(() => {})
+    const [uniqueNumber, setUniqueNumber] = useState<string | null>(null);
+
+    const handleUniqueNumberInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const val = e.target.value;
+
+        if (/^\d*$/.test(val)) {
+            setUniqueNumber(val);
+        }
+    }
 
     return (
         <div className="w-full h-full overflow-y-auto flex flex-row md:justify-center p-[20px] md:bg-[#131313]">
@@ -411,13 +436,24 @@ export default function Receive() {
                     Clear Pattern
                 </button>
                 <div className="w-[20px] h-[20px]"></div>
+                <input
+                    type="text"
+                    pattern="[0-9]*"
+                    inputMode="numeric"
+                    maxLength={4}
+                    placeholder="Unique Code"
+                    value={`${uniqueNumber === null ? '' : uniqueNumber}`}
+                    onChange={handleUniqueNumberInputChange}
+                    className="w-[150px] bg-neutral-800 text-white font-medium text-base rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-[#4f4f4f] placeholder-[#c1c1c1] text-center"
+                />
+                <div className="w-[20px] h-[20px]"></div>
                 <p className="text-sm font-normal tracking-[0.00rem] text-[#8a8a8a]">Please use the same pattern you used to store the files</p>
                 <div className="w-[20px] h-[5px]"></div>
                 <p className={`text-sm font-normal tracking-[0.00rem] text-[#8a8a8a] ${isShaking ? "shake" : ""}`} id="infoText">Pattern must connect atleast 6 dots</p>
                 <div className="w-[20px] h-[5px]"></div>
                 <p className="text-sm font-normal tracking-[0.00rem] text-[#8a8a8a]">Files only live for 5 minutes</p>
                 {isDataLoaded ? '' : <div className="w-[20px] h-[20px]"></div>}
-                {isDataLoaded ? '' : <button className="bg-[#f2f2f2] text-[#0a0a0a] text-lg font-medium rounded-lg px-6 py-3 transition-colors cursor-pointer hover:bg-neutral-900 hover:text-white flex justify-center items-center" onClick={()=>retrieveData(path, setIsLoading, setDataLoaded, setTextData, setFileName, setIsErrorVisible, setIsError, setErrorText, setErrorHandler)}>
+                {isDataLoaded ? '' : <button className="bg-[#f2f2f2] text-[#0a0a0a] text-lg font-medium rounded-lg px-6 py-3 transition-colors cursor-pointer hover:bg-neutral-900 hover:text-white flex justify-center items-center" onClick={()=>retrieveData(path, setIsLoading, setDataLoaded, setTextData, setFileName, setIsErrorVisible, setIsError, setErrorText, setErrorHandler, uniqueNumber)}>
                 {
                     isLoading ? 
                     <div className="w-6 h-6 rounded-full border-4 border-t-transparent border-gray-300 animate-spin"></div>

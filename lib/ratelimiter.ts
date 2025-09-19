@@ -19,7 +19,6 @@ export async function rateLimit(identifier: string): Promise<boolean> {
         .exec();
 
         const count = requestCount;
-        console.log(count)
 
         if (count > MAX_REQUESTS) {
             console.warn(`Rate-limited: ${identifier} has made ${count} requests.`);

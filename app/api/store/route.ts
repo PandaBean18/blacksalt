@@ -24,8 +24,26 @@ export async function POST(request: Request) {
         if (!lookupKey || !salt || !iv || !ciphertext) {
             return new NextResponse(JSON.stringify({ error: 'Missing required fields' }), { status: 400 });
         }
+
+        let isNumberUnique = false; 
+        let uniqueNumber = null;
+
+        while (!isNumberUnique) {
+            uniqueNumber = Math.floor(1000 + Math.random() * 9000);
+            const querySnapshot = await db.collection('encrypted_data')
+                .where('lookupKey', '==', lookupKey)
+                .where('uniqueNumber', '==', uniqueNumber)
+                .limit(1)
+                .get();
+
+            if (querySnapshot.empty) {
+                isNumberUnique = true;
+            }
+        }
         
-        await db.collection('encrypted_data').doc(lookupKey).set({
+        await db.collection('encrypted_data').add({
+            lookupKey: lookupKey,
+            uniqueNumber: uniqueNumber,
             salt: salt,
             iv: iv,
             ciphertext: ciphertext,
@@ -35,7 +53,7 @@ export async function POST(request: Request) {
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
         });
 
-        return new NextResponse(JSON.stringify({ success: true, message: 'Data stored successfully' }), { status: 200 });
+        return new NextResponse(JSON.stringify({ success: true, message: 'Data stored successfully', uniqueNumber: uniqueNumber }), { status: 200 });
 
     } catch (error) {
         console.error('API Error:', error);

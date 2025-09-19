@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import ErrorDiv from "../components/errorDiv";
+import { JsonObject } from "ably";
 
 type Point = {
     x: number;
@@ -168,7 +169,6 @@ function PatternGrid({isDrawing, setIsDrawing, path, setPath, endPoint, setEndPo
                     }
                     return (e.length == cleanedPath.length);
                 })) {
-                    console.log("Unsafe")
                     const buttonHandler = () => {
                         setIsErrorVisible(false);
                         setIsError(false);
@@ -376,7 +376,7 @@ async function generateKeys(patternString: string) {
     };
 }
 
-async function storeData(setIsLoading: React.Dispatch<React.SetStateAction<boolean>>, path: PathPoint[], setIsShaking: React.Dispatch<React.SetStateAction<boolean>>, setDataLoaded: React.Dispatch<React.SetStateAction<boolean>>, file: File | null, setIsErrorVisible: React.Dispatch<React.SetStateAction<boolean>>, setIsError: React.Dispatch<React.SetStateAction<boolean>>, setErrorText: React.Dispatch<React.SetStateAction<string>>, setErrorHandler: React.Dispatch<React.SetStateAction<React.MouseEventHandler<HTMLButtonElement>>>) {
+async function storeData(setIsLoading: React.Dispatch<React.SetStateAction<boolean>>, path: PathPoint[], setIsShaking: React.Dispatch<React.SetStateAction<boolean>>, setDataLoaded: React.Dispatch<React.SetStateAction<boolean>>, file: File | null, setIsErrorVisible: React.Dispatch<React.SetStateAction<boolean>>, setIsError: React.Dispatch<React.SetStateAction<boolean>>, setErrorText: React.Dispatch<React.SetStateAction<string>>, setErrorHandler: React.Dispatch<React.SetStateAction<React.MouseEventHandler<HTMLButtonElement>>>, setUniqueNumber: React.Dispatch<React.SetStateAction<Number | null>>) {
     setIsLoading(true);
     const textContainer = document.getElementById('userText')!
     const text = (textContainer as HTMLInputElement)!.value
@@ -442,6 +442,11 @@ async function storeData(setIsLoading: React.Dispatch<React.SetStateAction<boole
         if (response.ok) {
             setIsLoading(false);
             setDataLoaded(true);
+            const data = await response.json() as JsonObject;
+            if (data.uniqueNumber) {
+                setUniqueNumber(data.uniqueNumber as Number);
+            }
+            
             return true;
         } else {
             const buttonHandler = () => {
@@ -498,6 +503,7 @@ export default function Store() {
     const [isError, setIsError] = useState(false);
     const [errorText, setErrorText] = useState('');
     const [errorHandler, setErrorHandler] = useState<React.MouseEventHandler<HTMLButtonElement>>(() => {})
+    const [uniqueNumber, setUniqueNumber] = useState<Number | null>(null);
 
     useEffect(() => {
         let timerId: number | undefined;
@@ -596,7 +602,7 @@ export default function Store() {
 
                     <div className="w-[20px] h-[20px]"></div>
 
-                    <button className="w-full bg-[#f2f2f2] text-[#0a0a0a] text-lg font-medium rounded-lg px-6 py-3 transition-colors cursor-pointer hover:bg-neutral-900 hover:text-white flex justify-center items-center" onClick={() => storeData(setIsLoading, path, setIsShaking, setDataLoaded, file, setIsErrorVisible, setIsError, setErrorText, setErrorHandler)}>
+                    <button className="w-full bg-[#f2f2f2] text-[#0a0a0a] text-lg font-medium rounded-lg px-6 py-3 transition-colors cursor-pointer hover:bg-neutral-900 hover:text-white flex justify-center items-center" onClick={() => storeData(setIsLoading, path, setIsShaking, setDataLoaded, file, setIsErrorVisible, setIsError, setErrorText, setErrorHandler, setUniqueNumber)}>
                     {
                         isLoading ? 
                         <div className="w-6 h-6 rounded-full border-4 border-t-transparent border-gray-300 animate-spin"></div>
@@ -605,6 +611,14 @@ export default function Store() {
                     </button>
                 </div> :
                 <div className="flex flex-col items-center p-8 rounded-xl bg-neutral-900 shadow-lg border border-neutral-800 text-center animate-fadeIn">
+                    <p className="text-xl text-white font-semibold">
+                        {`${uniqueNumber}`}
+                    </p>
+                    
+                    <p className="text-base text-gray-400 font-normal">
+                        Please use this code to access your data
+                    </p>
+                    
                     <div className="w-full flex justify-center mb-2">
                         <img 
                         className='w-1/3 min-w-[150px]' 

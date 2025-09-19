@@ -19,13 +19,28 @@ export async function POST(request: Request) {
 
     try {
         const payload = await request.json();
-        const { lookupKey } = payload;
+        const { lookupKey, uniqueNumber } = payload;
+        
 
         if (!lookupKey) {
             return new NextResponse(JSON.stringify({ error: 'Missing lookupKey in request body' }), { status: 400 });
         }
+
+        if (!uniqueNumber || uniqueNumber.length < 3) {
+            return new NextResponse(JSON.stringify({ error: 'Missing or invalid unique code' }), { status: 400 });
+        }
         
-        const docRef = db.collection('encrypted_data').doc(lookupKey);
+        const querySnapshot = await db.collection('encrypted_data')
+                .where('lookupKey', '==', lookupKey)
+                .where('uniqueNumber', '==', Number(uniqueNumber))
+                .limit(1)
+                .get();
+
+        if (querySnapshot.empty) {
+            return new NextResponse(JSON.stringify({ error: 'Data not found' }), { status: 404 });
+        }
+
+        const docRef = querySnapshot.docs[0].ref
         const docSnapshot = await docRef.get();
 
         if (!docSnapshot.exists) {
